@@ -1,0 +1,16 @@
+plugins {
+  id 'java-library'
+}
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  implementation 'org.apache.beam:beam-sdks-java-core:2.15.0'
+  implementation 'com.google.guava:guava:27.0.1-jre'
+  testCompile 'org.apache.beam:beam-runners-direct-java:2.23.0'
+  runtime "org.slf4j:slf4j-api:1.+"
+  runtime "org.slf4j:slf4j-jdk14:1.+"
+  testCompile "junit:junit:4.+"
+}
