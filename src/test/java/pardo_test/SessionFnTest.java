@@ -20,6 +20,7 @@ import org.joda.time.Instant;
 import org.junit.Test;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.List;
 
 public class SessionFnTest implements Serializable {
@@ -30,19 +31,25 @@ public class SessionFnTest implements Serializable {
     final Duration period = Duration.standardMinutes(5);
     final Duration gap = Duration.standardMinutes(30);
 
-    ImmutableList<KV<String,TestEvent>> testEvents = ImmutableList.of(
-      KV.of("Key1", new TestEvent("Event 1", starTime)),
-      KV.of("Key1", new TestEvent("Event 2", starTime.plus(period))),
-      // Now, same key, but with a large event time gap
-      KV.of("Key1", new TestEvent("Event 3", starTime.plus(gap.plus(period.multipliedBy(2))))),
-      KV.of("Key1", new TestEvent("Event 4", starTime.plus(gap.plus(period.multipliedBy(3))))),
-      KV.of("Key1", new TestEvent("Event 5", starTime.plus(gap.plus(period.multipliedBy(4)))))
+    List<KV<String,TestEvent>> testEvents = Arrays.asList(
+        KV.of("Key1", new TestEvent("Event 1", starTime)),
+        KV.of("Key1", new TestEvent("Event 2", starTime.plus(period))),
+        null, // Add a watermark advancement
+        KV.of("Key1", new TestEvent("Event 3", starTime.plus(gap.plus(period.multipliedBy(2))))),
+        KV.of("Key1", new TestEvent("Event 4", starTime.plus(gap.plus(period.multipliedBy(3))))),
+        KV.of("Key1", new TestEvent("Event 5", starTime.plus(gap.plus(period.multipliedBy(4)))))
     );
 
+    Instant previousWatermark = new Instant(0);
     for (KV<String,TestEvent> event : testEvents) {
-      Instant eventTimestamp = event.getValue().getTimestamp();
-      testStream = testStream.addElements(TimestampedValue.of(event, eventTimestamp));
-      testStream = testStream.advanceWatermarkTo(eventTimestamp);
+      if (event == null) {
+        testStream.advanceWatermarkTo(previousWatermark.plus(Duration.standardMinutes(16)));
+      } else {
+        Instant eventTimestamp = event.getValue().getTimestamp();
+        testStream = testStream.addElements(TimestampedValue.of(event, eventTimestamp));
+        testStream = testStream.advanceWatermarkTo(eventTimestamp);
+        previousWatermark = eventTimestamp;
+      }
     }
 
     return testStream.advanceWatermarkToInfinity();
