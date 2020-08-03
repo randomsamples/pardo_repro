@@ -42,4 +42,9 @@ public class TestEvent implements Serializable {
   public int hashCode() {
     return eventType.hashCode() ^ timestamp.hashCode();
   }
+
+  @Override
+  public String toString() {
+    return "[" + eventType + ", " + timestamp + "]";
+  }
 }
