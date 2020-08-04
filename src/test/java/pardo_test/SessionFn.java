@@ -60,8 +60,10 @@ public class SessionFn extends DoFn<KV<String, TestEvent>, List<TestEvent>> {
   @OnTimer("sessionClosed")
   public void onSessionClosed(
       OnTimerContext context,
-      @StateId("events") BagState<TestEvent> events) {
+      @StateId("events") BagState<TestEvent> events,
+      @StateId("lastSetTimerTime") ValueState<Instant> lastSetTimerTime) {
     System.out.println("Timer firing at: " + context.timestamp());
+    lastSetTimerTime.write(new Instant(Long.MAX_VALUE));
     context.output(ImmutableList.copyOf(events.read().iterator()));
 
     // Clear all of our state when done
