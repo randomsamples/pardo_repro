@@ -32,13 +32,28 @@ public class SessionFnTest implements Serializable {
     final Duration gap = Duration.standardMinutes(30);
 
     List<KV<String,TestEvent>> testEvents = Arrays.asList(
-        KV.of("Key1", new TestEvent("Event 1", starTime)),
-        KV.of("Key1", new TestEvent("Event 2", starTime.plus(period))),
-        null, // Add a watermark advancement
-        KV.of("Key1", new TestEvent("Event 3", starTime.plus(gap.plus(period.multipliedBy(2))))),
-        KV.of("Key1", new TestEvent("Event 4", starTime.plus(gap.plus(period.multipliedBy(3))))),
-        KV.of("Key1", new TestEvent("Event 5", starTime.plus(gap.plus(period.multipliedBy(4)))))
-    );
+        KV.of("Key1", new TestEvent("Key 1 - Session 1 - Event 1", starTime.plus(period.multipliedBy(0)))),
+
+        KV.of("Key2", new TestEvent("Key 2 - Session 1 - Event 1", starTime.plus(period.multipliedBy(1)))),
+        KV.of("Key2", new TestEvent("Key 2 - Session 1 - Event 2", starTime.plus(period.multipliedBy(2)))),
+
+        null, // Add a watermark advancement larger than session gap, should split these sessions by firing the timers
+
+        KV.of("Key1", new TestEvent("Key 1 - Session 2 - Event 1", starTime.plus(gap.plus(period.multipliedBy(3))))),
+        KV.of("Key2", new TestEvent("Key 2 - Session 2 - Event 1", starTime.plus(gap.plus(period.multipliedBy(4))))),
+        KV.of("Key1", new TestEvent("Key 1 - Session 2 - Event 2", starTime.plus(gap.plus(period.multipliedBy(5))))),
+        KV.of("Key2", new TestEvent("Key 2 - Session 2 - Event 2", starTime.plus(gap.plus(period.multipliedBy(6))))),
+        KV.of("Key2", new TestEvent("Key 2 - Session 2 - Event 3", starTime.plus(gap.plus(period.multipliedBy(7))))),
+
+        null,
+
+        KV.of("Key1", new TestEvent("Key 1 - Session 3 - Event 1", starTime.plus(gap.plus(period.multipliedBy(8))))),
+        KV.of("Key1", new TestEvent("Key 1 - Session 3 - Event 2", starTime.plus(gap.plus(period.multipliedBy(9))))),
+        KV.of("Key3", new TestEvent("Key 3 - Session 1 - Event 1", starTime.plus(gap.plus(period.multipliedBy(10))))),
+        KV.of("Key2", new TestEvent("Key 2 - Session 3 - Event 1", starTime.plus(gap.plus(period.multipliedBy(11))))),
+        KV.of("Key3", new TestEvent("Key 3 - Session 1 - Event 2", starTime.plus(gap.plus(period.multipliedBy(12))))),
+        KV.of("Key2", new TestEvent("Key 2 - Session 3 - Event 2", starTime.plus(gap.plus(period.multipliedBy(13)))))
+        );
 
     Instant previousWatermark = new Instant(0);
     for (KV<String,TestEvent> event : testEvents) {

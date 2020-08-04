@@ -24,11 +24,8 @@ public class SessionFn extends DoFn<KV<String, TestEvent>, List<TestEvent>> {
   @StateId("events")
   private final StateSpec<BagState<TestEvent>> eventsState = StateSpecs.bag();
 
-  @StateId("lastTimerSet")
-  private final StateSpec<ValueState<String>> variantIdState = StateSpecs.value();
-
   @StateId("lastSetTimerTime")
-  private final StateSpec<ValueState<Instant>> lastSetTimerTimeState = StateSpecs.value();
+  private final StateSpec<ValueState<Instant>> variantIdState = StateSpecs.value();
 
   @TimerId("sessionClosed")
   private final TimerSpec sessionClosedSpec = TimerSpecs.timer(TimeDomain.EVENT_TIME);
@@ -39,21 +36,22 @@ public class SessionFn extends DoFn<KV<String, TestEvent>, List<TestEvent>> {
       @StateId("events") BagState<TestEvent> events,
       @StateId("lastSetTimerTime") ValueState<Instant> lastSetTimerTime,
       @TimerId("sessionClosed") Timer expiryTimer) {
-    System.out.println("Receiving event at: " + context.timestamp()); // debugging
     TestEvent event = context.element().getValue();
+
+    System.out.println("[" + context.element().getKey() + "] Receiving event at: " + context.timestamp()); // debugging
     if (lastSetTimerTime.read() != null) { // debugging
       if (lastSetTimerTime.read().isBefore(context.timestamp())) { // debugging
-        System.out.println("Why didnt the timer fire?"); // debugging
+        System.out.println("[" + context.element().getKey() + "] Why didnt the timer fire?"); // debugging
       } // debugging
     } // debugging
 
     // Everytime we see an event in this session, reset the session-close timer
     Instant newTimerTime = event.getTimestamp().plus(SESSION_TIMEOUT);
-    System.out.println("Resetting timer to : " + newTimerTime); // debugging
+    System.out.println("[" + context.element().getKey() + "] Resetting timer to : " + newTimerTime); // debugging
     expiryTimer.set(newTimerTime);
-    lastSetTimerTime.write(newTimerTime); // debuggin
+    lastSetTimerTime.write(newTimerTime); // debugging
 
-    //Also, add the event tot tne quq
+    // Add the event to the queue
     events.add(event);
   }
 
