@@ -27,6 +27,9 @@ public class SessionFn extends DoFn<KV<String, TestEvent>, List<TestEvent>> {
   @StateId("lastSetTimerTime")
   private final StateSpec<ValueState<Instant>> variantIdState = StateSpecs.value();
 
+  @StateId("key")
+  private final StateSpec<ValueState<String>> keyState = StateSpecs.value();
+
   @TimerId("sessionClosed")
   private final TimerSpec sessionClosedSpec = TimerSpecs.timer(TimeDomain.EVENT_TIME);
 
@@ -35,7 +38,8 @@ public class SessionFn extends DoFn<KV<String, TestEvent>, List<TestEvent>> {
       ProcessContext context,
       @StateId("events") BagState<TestEvent> events,
       @StateId("lastSetTimerTime") ValueState<Instant> lastSetTimerTime,
-      @TimerId("sessionClosed") Timer expiryTimer) {
+      @TimerId("sessionClosed") Timer expiryTimer,
+      @StateId("key") ValueState<String> key) {
     TestEvent event = context.element().getValue();
 
     System.out.println("[" + context.element().getKey() + "] Receiving event at: " + context.timestamp()); // debugging
@@ -51,6 +55,9 @@ public class SessionFn extends DoFn<KV<String, TestEvent>, List<TestEvent>> {
     expiryTimer.set(newTimerTime);
     lastSetTimerTime.write(newTimerTime); // debugging
 
+    // Store the key since its not easily accessible in the timer expiry context, so we log with it
+    key.write(context.element().getKey());
+
     // Add the event to the queue
     events.add(event);
   }
@@ -59,13 +66,13 @@ public class SessionFn extends DoFn<KV<String, TestEvent>, List<TestEvent>> {
   public void onSessionClosed(
       OnTimerContext context,
       @StateId("events") BagState<TestEvent> events,
-      @StateId("lastSetTimerTime") ValueState<Instant> lastSetTimerTime) {
-    System.out.println("Timer firing at: " + context.timestamp());
+      @StateId("lastSetTimerTime") ValueState<Instant> lastSetTimerTime,
+      @StateId("key") ValueState<String> key) {
+    System.out.println("[" + key.read() + "] Timer firing at: " + context.timestamp());
     lastSetTimerTime.write(new Instant(Long.MAX_VALUE));
     context.output(ImmutableList.copyOf(events.read().iterator()));
 
     // Clear all of our state when done
     events.clear();
-
   }
 }
