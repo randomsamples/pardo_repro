@@ -13,10 +13,12 @@ public class PrintListDoFn<T extends Iterable> extends DoFn<T, Void> {
   public void processElement(ProcessContext c) {
     lock.lock();
     try {
+      System.out.println();
       System.out.println("Iterable<" + c.element().getClass().getName() + ">: ----------------------------");
       for (Object event : c.element()) {
         System.out.println(indent + event.toString().replace("\n", "\n"+indent));
       }
+      System.out.println();
     } finally {
       lock.unlock();
     }
