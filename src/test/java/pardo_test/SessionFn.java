@@ -46,6 +46,13 @@ public class SessionFn extends DoFn<KV<String, TestEvent>, List<TestEvent>> {
     if (lastSetTimerTime.read() != null) { // debugging
       if (lastSetTimerTime.read().isBefore(context.timestamp())) { // debugging
         System.out.println("[" + context.element().getKey() + "] Why didnt the timer fire?"); // debugging
+
+        // // FIX: If we manually check for expired timer and perform our flush operation here before proceeding,
+        // // everything works exactly as expected! Shouldn't the Beam runtime do this check for me before calling
+        // // process()?
+        // lastSetTimerTime.write(new Instant(Long.MAX_VALUE));
+        // context.output(ImmutableList.copyOf(events.read().iterator()));
+        // events.clear();
       } // debugging
     } // debugging
 
